@@ -1,12 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { QualificationService } from '../qualification/qualification.service';
 import { CallStatus } from '@prisma/client';
 
 @Injectable()
 export class TranscriptionService {
   private readonly logger = new Logger(TranscriptionService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => QualificationService))
+    private qualificationService: QualificationService,
+  ) {}
 
   /**
    * Mock transcription templates for realistic call scenarios
@@ -115,16 +120,25 @@ export class TranscriptionService {
         })),
       });
 
-      // Update call with duration and status
-      await this.prisma.call.update({
+      // Update call with duration
+      const call = await this.prisma.call.update({
         where: { id: callId },
         data: {
           duration,
-          status: CallStatus.COMPLETED,
+        },
+        include: {
+          user: true,
         },
       });
 
       this.logger.log(`Mock transcription completed for call ${callId}`);
+
+      // Trigger qualification evaluation in background
+      this.qualificationService
+        .evaluateCall(callId, call.userId)
+        .catch((error) => {
+          this.logger.error(`Qualification evaluation failed for call ${callId}:`, error);
+        });
     } catch (error) {
       this.logger.error(`Transcription failed for call ${callId}:`, error);
 

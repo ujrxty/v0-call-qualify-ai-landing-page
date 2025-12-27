@@ -1,6 +1,7 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { RulesService } from '../rules/rules.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
@@ -10,6 +11,8 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => RulesService))
+    private rulesService: RulesService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -46,6 +49,11 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+    });
+
+    // Create default qualification rules for new user
+    this.rulesService.createDefaultRules(user.id).catch((error) => {
+      console.error('Failed to create default rules:', error);
     });
 
     return {

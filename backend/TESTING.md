@@ -531,4 +531,163 @@ You'll see counts update:
 
 ---
 
+## 🎯 Test Rule Evaluation (AUTO!)
+
+Rule evaluation also happens **automatically** after transcription! Here's how to test it:
+
+### Default Rules Created on Registration:
+When you register, 5 default rules are created automatically:
+1. ✅ **Proper Greeting** - Agent must say hello/hi/good morning
+2. ✅ **Mandatory Disclosure** - Agent must mention call recording
+3. ✅ **Product Mentioned** - Agent must mention product/service
+4. ✅ **Minimum Duration** - Call must be at least 30 seconds
+5. ⚪ **Professional Closing** - Agent should close professionally (optional)
+
+### Complete Test Flow:
+
+**Step 1: Register (creates default rules automatically)**
+```bash
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"test123","name":"Test User"}'
+```
+
+**Step 2: View your rules**
+```bash
+curl http://localhost:3001/api/rules \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Step 3: Upload a call and watch the magic happen**
+```bash
+curl -X POST http://localhost:3001/api/calls/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@test-call.mp3" \
+  -F "callerName=John Doe"
+
+# Save the call ID from response
+CALL_ID="your-call-id"
+
+# Wait 5 seconds for transcription + qualification
+sleep 5
+
+# Get full results with qualification
+curl http://localhost:3001/api/calls/$CALL_ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Expected response with qualification:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "call-id",
+    "status": "COMPLETED",
+    "duration": 45230,
+    "transcript": { ... },
+    "qualification": {
+      "overallStatus": "QUALIFIED",
+      "confidenceAvg": 0.93,
+      "rulesPassed": 5,
+      "rulesFailed": 0,
+      "ruleResults": [
+        {
+          "rule": {
+            "name": "Proper Greeting",
+            "type": "KEYWORD"
+          },
+          "passed": true,
+          "confidence": 0.95,
+          "explanation": "Found keyword(s): \"good morning\"",
+          "matchedText": "good morning"
+        },
+        {
+          "rule": {
+            "name": "Mandatory Disclosure",
+            "type": "KEYWORD"
+          },
+          "passed": true,
+          "confidence": 0.95,
+          "explanation": "Found keyword(s): \"recorded\"",
+          "matchedText": "recorded"
+        }
+        // ... more results
+      ]
+    }
+  }
+}
+```
+
+### Manage Custom Rules:
+
+**Create a custom rule:**
+```bash
+curl -X POST http://localhost:3001/api/rules \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Ask for Decision",
+    "description": "Agent must ask if customer is ready to proceed",
+    "type": "KEYWORD",
+    "criteria": {
+      "keywords": ["ready to proceed", "move forward", "decision"],
+      "speaker": "AGENT",
+      "position": "anywhere"
+    },
+    "isRequired": true
+  }'
+```
+
+**Update a rule:**
+```bash
+curl -X PATCH http://localhost:3001/api/rules/RULE_ID \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "isRequired": false
+  }'
+```
+
+**Delete a rule:**
+```bash
+curl -X DELETE http://localhost:3001/api/rules/RULE_ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Rule Types Available:
+- `KEYWORD` - Match specific words/phrases
+- `DURATION` - Check call length
+- `SPEAKER_TIME` - Verify speaker talk ratio
+- `CUSTOM` - Advanced custom logic (coming soon)
+
+### Rule Criteria Examples:
+
+**Keyword rule:**
+```json
+{
+  "keywords": ["price", "pricing", "cost"],
+  "speaker": "AGENT",
+  "position": "anywhere"  // or "first_3_lines" or "last_3_lines"
+}
+```
+
+**Duration rule:**
+```json
+{
+  "min_seconds": 60,
+  "max_seconds": 300
+}
+```
+
+**Speaker time rule:**
+```json
+{
+  "speaker": "AGENT",
+  "min_percentage": 40,
+  "max_percentage": 70
+}
+```
+
+---
+
 **Ready to test? Start the server and try uploading calls! 🚀**

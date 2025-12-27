@@ -6,6 +6,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { CallsModule } from './calls/calls.module';
 import { TranscriptionModule } from './transcription/transcription.module';
+import { RulesModule } from './rules/rules.module';
+import { QualificationModule } from './qualification/qualification.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { TranscriptionModule } from './transcription/transcription.module';
     AuthModule,
     CallsModule,
     TranscriptionModule,
+    RulesModule,
+    QualificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
