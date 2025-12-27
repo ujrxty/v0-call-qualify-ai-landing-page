@@ -1,0 +1,208 @@
+// CallQualify AI - Database Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  calls      Call[]
+  batchJobs  BatchJob[]
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model Call {
+  id             String     @id @default(uuid())
+  recordingUrl   String     @map("recording_url")
+  fileName       String?    @map("file_name")
+  fileSize       Int?       @map("file_size")
+  fileFormat     String?    @map("file_format")
+  duration       Int?       // in seconds
+  status         CallStatus @default(PENDING)
+  errorMessage   String?    @map("error_message")
+
+  // Metadata
+  metadata       Json?      // Flexible JSON field for caller info, campaign, etc.
+
+  // Relations
+  userId         String     @map("user_id")
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  batchJobId     String?    @map("batch_job_id")
+  batchJob       BatchJob?  @relation(fields: [batchJobId], references: [id])
+
+  transcript     Transcript?
+  qualification  QualificationResult?
+
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([batchJobId])
+  @@map("calls")
+}
+
+enum CallStatus {
+  PENDING
+  TRANSCRIBING
+  EVALUATING
+  COMPLETED
+  FAILED
+}
+
+model Transcript {
+  id           String   @id @default(uuid())
+  callId       String   @unique @map("call_id")
+  call         Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  fullText     String   @map("full_text") @db.Text
+  language     String   @default("en")
+  confidenceAvg Float   @map("confidence_avg")
+
+  lines        TranscriptLine[]
+
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("transcripts")
+}
+
+model TranscriptLine {
+  id           String     @id @default(uuid())
+  transcriptId String     @map("transcript_id")
+  transcript   Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+
+  speaker      Speaker
+  text         String     @db.Text
+  startTime    Float      @map("start_time")  // seconds from start
+  endTime      Float      @map("end_time")
+  confidence   Float
+
+  sequenceNumber Int      @map("sequence_number") // Order in transcript
+
+  @@index([transcriptId])
+  @@map("transcript_lines")
+}
+
+enum Speaker {
+  AGENT
+  CUSTOMER
+  UNKNOWN
+}
+
+model QualificationRule {
+  id          String   @id @default(uuid())
+  name        String
+  key         String   @unique
+  description String?  @db.Text
+  ruleType    RuleType @map("rule_type")
+
+  // Rule parameters stored as JSON
+  parameters  Json
+
+  isActive    Boolean  @default(true) @map("is_active")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  ruleResults RuleResult[]
+
+  @@map("qualification_rules")
+}
+
+enum RuleType {
+  KEYWORD
+  REGEX
+  DURATION
+  CUSTOM
+}
+
+model QualificationResult {
+  id              String   @id @default(uuid())
+  callId          String   @unique @map("call_id")
+  call            Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  overallStatus   QualificationStatus @map("overall_status")
+  rulesPassed     Int      @map("rules_passed")
+  rulesFailed     Int      @map("rules_failed")
+
+  ruleResults     RuleResult[]
+
+  evaluatedAt     DateTime @default(now()) @map("evaluated_at")
+
+  @@map("qualification_results")
+}
+
+enum QualificationStatus {
+  QUALIFIED
+  REJECTED
+}
+
+model RuleResult {
+  id                     String              @id @default(uuid())
+  qualificationResultId  String              @map("qualification_result_id")
+  qualificationResult    QualificationResult @relation(fields: [qualificationResultId], references: [id], onDelete: Cascade)
+
+  ruleId                 String              @map("rule_id")
+  rule                   QualificationRule   @relation(fields: [ruleId], references: [id])
+
+  ruleName               String              @map("rule_name")
+  status                 RuleStatus
+
+  // Evidence stored as JSON
+  evidence               Json
+
+  @@index([qualificationResultId])
+  @@map("rule_results")
+}
+
+enum RuleStatus {
+  PASS
+  FAIL
+}
+
+model BatchJob {
+  id          String      @id @default(uuid())
+  userId      String      @map("user_id")
+  user        User        @relation(fields: [userId], references: [id])
+
+  totalCalls  Int         @map("total_calls")
+  processed   Int         @default(0)
+  succeeded   Int         @default(0)
+  failed      Int         @default(0)
+
+  status      BatchStatus @default(QUEUED)
+
+  calls       Call[]
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+  completedAt DateTime?   @map("completed_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("batch_jobs")
+}
+
+enum BatchStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
