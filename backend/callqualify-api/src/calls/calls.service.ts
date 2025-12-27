@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { TranscriptionService } from '../transcription/transcription.service';
 import { UploadCallDto } from './dto/upload-call.dto';
 import { QueryCallsDto } from './dto/query-calls.dto';
 import { CallStatus } from '@prisma/client';
@@ -10,7 +11,10 @@ import * as path from 'path';
 export class CallsService {
   private readonly uploadDir = path.join(process.cwd(), 'uploads');
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private transcriptionService: TranscriptionService,
+  ) {
     this.ensureUploadDir();
   }
 
@@ -70,6 +74,11 @@ export class CallsService {
         status: CallStatus.PENDING,
         metadata: Object.keys(metadata).length > 0 ? metadata : null,
       },
+    });
+
+    // Trigger transcription in background (non-blocking)
+    this.transcriptionService.processCall(call.id).catch((error) => {
+      console.error(`Background transcription failed for call ${call.id}:`, error);
     });
 
     return {

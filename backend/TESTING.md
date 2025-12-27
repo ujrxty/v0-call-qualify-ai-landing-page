@@ -425,4 +425,110 @@ curl http://localhost:3001/api/calls/stats \
 
 ---
 
+## 🤖 Test Mock Transcription (AUTO!)
+
+The transcription happens **automatically** when you upload a call! Here's what to expect:
+
+### How It Works:
+1. Upload a call → Status: `PENDING`
+2. Wait 1-2 seconds → Status: `TRANSCRIBING`
+3. Wait another 1-2 seconds → Status: `COMPLETED`
+
+### Watch It Happen:
+
+**Step 1: Upload a call**
+```bash
+curl -X POST http://localhost:3001/api/calls/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@test-call.mp3" \
+  -F "callerName=John Doe"
+```
+
+**Step 2: Get the call ID from response and watch status updates**
+```bash
+# Replace CALL_ID with your actual call ID
+CALL_ID="your-call-id-here"
+
+# Check status immediately (should be PENDING or TRANSCRIBING)
+curl http://localhost:3001/api/calls/$CALL_ID \
+  -H "Authorization: Bearer $TOKEN"
+
+# Wait 3 seconds, then check again (should be COMPLETED)
+sleep 3
+curl http://localhost:3001/api/calls/$CALL_ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Step 3: View the full transcript**
+```bash
+curl http://localhost:3001/api/calls/$CALL_ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response with transcript:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "call-id",
+    "status": "COMPLETED",
+    "duration": 45230,
+    "transcript": {
+      "id": "transcript-id",
+      "confidenceAvg": 0.94,
+      "language": "en-US",
+      "speakersCount": 2,
+      "lines": [
+        {
+          "sequenceNumber": 1,
+          "speaker": "AGENT",
+          "text": "Good morning, this is Sarah from CallQualify AI. Am I speaking with John?",
+          "startTime": 500,
+          "endTime": 4200,
+          "confidence": 0.96
+        },
+        {
+          "sequenceNumber": 2,
+          "speaker": "CUSTOMER",
+          "text": "Yes, this is John speaking.",
+          "startTime": 5800,
+          "endTime": 7500,
+          "confidence": 0.92
+        }
+        // ... more lines
+      ]
+    }
+  }
+}
+```
+
+### What Gets Generated:
+- **Realistic call conversations** (3 different templates: lead qualification, demo, support)
+- **Speaker diarization** (AGENT vs CUSTOMER)
+- **Accurate timing** (based on text length, ~150 words/min)
+- **Confidence scores** (0.80 - 0.99 range)
+- **Call duration** (calculated from transcript)
+
+### Check Stats After Upload:
+```bash
+curl http://localhost:3001/api/calls/stats \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+You'll see counts update:
+```json
+{
+  "success": true,
+  "data": {
+    "total": 3,
+    "pending": 0,
+    "transcribing": 0,
+    "completed": 3,
+    "failed": 0
+  }
+}
+```
+
+---
+
 **Ready to test? Start the server and try uploading calls! 🚀**
