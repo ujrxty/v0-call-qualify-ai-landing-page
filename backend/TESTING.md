@@ -267,4 +267,162 @@ Coming soon:
 
 ---
 
-**Ready to test? Start the server and try the auth endpoints! 🚀**
+---
+
+## 📞 Test the Calls API (NEW!)
+
+### Upload a Call Recording
+
+**Using cURL:**
+```bash
+# First, login to get your token
+TOKEN=$(curl -s -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@test.com","password":"pass123"}' | jq -r '.data.token')
+
+# Upload an audio file
+curl -X POST http://localhost:3001/api/calls/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@/path/to/your/audio.mp3" \
+  -F "callerName=John Doe" \
+  -F "callerPhone=555-1234" \
+  -F "agentName=Sarah Smith" \
+  -F "campaign=Lead Gen Q4"
+```
+
+**Using Postman:**
+1. Set method to `POST`
+2. URL: `http://localhost:3001/api/calls/upload`
+3. Headers: `Authorization: Bearer YOUR_TOKEN`
+4. Body → form-data:
+   - Key: `file` (type: File) → Select audio file
+   - Key: `callerName` (type: Text) → "John Doe"
+   - Key: `agentName` (type: Text) → "Sarah"
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-here",
+    "recordingUrl": "/uploads/call-1234567890.mp3",
+    "fileName": "my-call.mp3",
+    "fileSize": 1048576,
+    "fileFormat": "audio/mpeg",
+    "status": "PENDING",
+    "metadata": {
+      "caller_name": "John Doe",
+      "caller_phone": "555-1234",
+      "agent_name": "Sarah Smith",
+      "campaign": "Lead Gen Q4"
+    },
+    "createdAt": "2025-12-27T..."
+  },
+  "message": "Call uploaded successfully. Processing will begin shortly."
+}
+```
+
+### List All Calls
+
+```bash
+# Get all calls (paginated)
+curl http://localhost:3001/api/calls \
+  -H "Authorization: Bearer $TOKEN"
+
+# With filters
+curl "http://localhost:3001/api/calls?status=COMPLETED&page=1&limit=10" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Search calls
+curl "http://localhost:3001/api/calls?search=John" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Get Call Details
+
+```bash
+# Replace CALL_ID with actual ID from upload response
+curl http://localhost:3001/api/calls/CALL_ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Get Call Stats
+
+```bash
+curl http://localhost:3001/api/calls/stats \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "total": 15,
+    "pending": 3,
+    "transcribing": 2,
+    "evaluating": 1,
+    "completed": 8,
+    "failed": 1
+  }
+}
+```
+
+### Delete a Call
+
+```bash
+curl -X DELETE http://localhost:3001/api/calls/CALL_ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+## 🎵 Test Audio Files
+
+Don't have audio files? Generate test files:
+
+**Using macOS:**
+```bash
+say "Hello, this is a test call recording" -o test-call.m4a
+```
+
+**Using Text-to-Speech online:**
+- Visit: https://ttsmp3.com/
+- Type some text
+- Download as MP3
+
+**Sample test text:**
+```
+Agent: Hello, this is Sarah from CallQualify AI. How can I help you today?
+Customer: Hi, I'm interested in your lead qualification service.
+Agent: Great! Let me explain how our AI transcription works...
+```
+
+---
+
+## 🧪 Complete Test Flow
+
+```bash
+# 1. Register
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@test.com","password":"demo123","name":"Demo User"}'
+
+# 2. Save token from response, then upload call
+curl -X POST http://localhost:3001/api/calls/upload \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@test-call.mp3" \
+  -F "callerName=Test Caller"
+
+# 3. List calls
+curl http://localhost:3001/api/calls \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 4. Get stats
+curl http://localhost:3001/api/calls/stats \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+**Ready to test? Start the server and try uploading calls! 🚀**
