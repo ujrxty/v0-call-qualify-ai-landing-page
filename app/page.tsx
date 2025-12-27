@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ShieldCheck, Zap, ArrowRight, BarChart3, Clock } from "lucide-react"
 import Link from "next/link"
+import Hero3DBackground from "@/components/hero-3d-background"
+import CallQualificationDemo from "@/components/call-qualification-demo"
 
 export default function LandingPage() {
   return (
@@ -39,9 +41,10 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* 4.2 Hero Section */}
-        <section className="relative pt-24 pb-20 md:pt-32 md:pb-32 overflow-hidden border-b border-white/10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(120,119,198,0.1),transparent)]" />
-          <div className="container relative mx-auto px-4 text-center">
+        <section className="relative pt-24 pb-20 md:pt-32 md:pb-32 overflow-hidden border-b border-white/10 min-h-screen">
+          <Hero3DBackground />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(120,119,198,0.1),transparent)]" style={{ zIndex: 1 }} />
+          <div className="container relative mx-auto px-4 text-center" style={{ zIndex: 10 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 shadow-xl mb-8 animate-in fade-in slide-in-from-bottom-4">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
@@ -73,40 +76,7 @@ export default function LandingPage() {
                 Watch Demo
               </Button>
             </div>
-            {/* Visual placeholder matching design inspiration style */}
-            <div className="mt-20 max-w-5xl mx-auto rounded-xl border border-white/10 bg-white/5 p-2 shadow-2xl overflow-hidden">
-              <div className="rounded-lg bg-black/40 aspect-video flex flex-col items-center justify-center border border-white/5 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,0.4))]" />
-                <div className="z-10 w-full max-w-2xl p-6">
-                  <div className="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="size-3 rounded-full bg-red-500/50" />
-                      <div className="size-3 rounded-full bg-yellow-500/50" />
-                      <div className="size-3 rounded-full bg-green-500/50" />
-                    </div>
-                    <div className="text-xs text-muted-foreground font-mono">monitoring-query-v1.tsx</div>
-                  </div>
-                  <div className="space-y-4 font-mono text-sm">
-                    <div className="flex gap-4">
-                      <span className="text-muted-foreground">01</span>
-                      <span className="text-white">{"import { evaluateCall } from '@callqualify/ai'"}</span>
-                    </div>
-                    <div className="flex gap-4">
-                      <span className="text-muted-foreground">02</span>
-                      <span className="text-white">{"const results = await evaluateCall(recording_id, {"}</span>
-                    </div>
-                    <div className="flex gap-4">
-                      <span className="text-muted-foreground">03</span>
-                      <span className="text-blue-400">{"  rules: ['mandatory_disclosure', 'proper_greeting']"}</span>
-                    </div>
-                    <div className="flex gap-4">
-                      <span className="text-muted-foreground">04</span>
-                      <span className="text-white">{"})"}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <CallQualificationDemo />
           </div>
         </section>
 
